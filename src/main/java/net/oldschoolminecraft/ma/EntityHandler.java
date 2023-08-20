@@ -1,16 +1,19 @@
 package net.oldschoolminecraft.ma;
 
 import com.earth2me.essentials.User;
+import org.bukkit.craftbukkit.entity.CraftMonster;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
 import org.bukkit.event.entity.CreatureSpawnEvent;
+import org.bukkit.event.entity.EntityDamageByEntityEvent;
 import org.bukkit.event.entity.EntityDamageEvent;
-import org.bukkit.event.entity.EntityDeathEvent;
 import org.bukkit.event.entity.EntityListener;
 
 public class EntityHandler extends EntityListener
 {
+    @EventHandler
     public void onCreatureSpawn(CreatureSpawnEvent event)
     {
         // check if the spawned entity is from a spawner
@@ -22,31 +25,45 @@ public class EntityHandler extends EntityListener
         }
     }
 
-    public void onEntityDeath(EntityDeathEvent event)
+    @EventHandler
+    public void onEntityDamageByEntity(EntityDamageByEntityEvent event)
     {
+        if (!(event.getEntity() instanceof CraftMonster)) return; // ignore event if it's not a monster
+
+        System.out.println(event.getEntity().getClass().getSimpleName() + " damaged by " + event.getDamager().getClass().getSimpleName());
+        System.out.println("Current health: " + ((CraftMonster) event.getEntity()).getHealth());
+        System.out.println("Damage: " + event.getDamage());
+
+        boolean dead = (((CraftMonster) event.getEntity()).getHealth() - event.getDamage()) <= 0;
+        if (!dead) return; // ignore event if monster isn't dead
+
         if (!MobAssassin.instance.spawnerEntities.containsKey(event.getEntity().getEntityId()))
         {
             // if the damage cause reason isn't an entity attack, ignore it
-            if (!(event.getEntity().getLastDamageCause().getCause() == EntityDamageEvent.DamageCause.ENTITY_ATTACK)) return;
+            EntityDamageEvent.DamageCause cause = event.getEntity().getLastDamageCause().getCause();
+            System.out.println("mob death: " + cause);
+            if (!(cause == EntityDamageEvent.DamageCause.CONTACT)) return;
             // if the damage cause entity isn't a player, check if it's an arrow
-            if (!(event.getEntity().getLastDamageCause().getEntity() instanceof Player))
+            if (!(event.getDamager() instanceof Player))
             {
-                if (event.getEntity().getLastDamageCause().getEntity() instanceof Arrow)
+                if (event.getDamager() instanceof Arrow)
                 {
                     // get the shooter of the arrow
                     LivingEntity shooter = ((Arrow) event.getEntity().getLastDamageCause().getEntity()).getShooter();
                     // check if the shooter is a player, return if it's not.
                     if (!(shooter instanceof Player)) return;
-                }
+                } else return; // not a player or an arrow
             }
 
             String mobType = event.getEntity().getClass().getSimpleName();
+
+            System.out.println("mob death: " + mobType + " killed by " + event.getDamager().getClass().getSimpleName());
 
             // dish out the dough
             Player player = (Player) event.getEntity().getLastDamageCause().getEntity();
             User user = MobAssassin.instance.essentials.getOfflineUser(player.getName());
 
-            double value = MobAssassin.instance.mobIncentiveMap.get(mobType);
+            double value = MobAssassin.instance.maConfig.getConfigDouble("incentives." + mobType);
 
             user.giveMoney(value);
 

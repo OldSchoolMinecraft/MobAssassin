@@ -2,9 +2,14 @@ package net.oldschoolminecraft.ma;
 
 import com.earth2me.essentials.Essentials;
 import org.bukkit.Bukkit;
+import org.bukkit.ChatColor;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.entity.Entity;
+import org.bukkit.entity.Player;
 import org.bukkit.plugin.java.JavaPlugin;
 
+import java.io.File;
 import java.util.HashMap;
 
 public class MobAssassin extends JavaPlugin
@@ -12,23 +17,16 @@ public class MobAssassin extends JavaPlugin
     public static MobAssassin instance;
 
     public HashMap<Integer, Entity> spawnerEntities = new HashMap<>();
-    public HashMap<String, Double> mobIncentiveMap = new HashMap<>();
     public Essentials essentials;
+    public MAConfig maConfig;
 
     public void onEnable()
     {
         instance = this;
         essentials = (Essentials) getServer().getPluginManager().getPlugin("Essentials");
+        maConfig = new MAConfig(new File(getDataFolder(), "config.yml"));
 
-        mobIncentiveMap.put("zombie", 0.2);
-        mobIncentiveMap.put("skeleton", 0.3);
-        mobIncentiveMap.put("creeper", 0.4);
-        mobIncentiveMap.put("spider", 0.25);
-        mobIncentiveMap.put("slime:0", 1.0); // big slime
-        mobIncentiveMap.put("slime:1", 0.35); // medium slime
-        mobIncentiveMap.put("slime:2", 0.0); // small slime
-        mobIncentiveMap.put("pigman", 0.4);
-        mobIncentiveMap.put("ghast", 4.0);
+        getServer().getPluginManager().registerEvents(new EntityHandler(), this);
 
         Bukkit.getScheduler().scheduleAsyncRepeatingTask(this, () ->
         {
@@ -39,6 +37,36 @@ public class MobAssassin extends JavaPlugin
         }, 0L, 20 * 60);
 
         System.out.println("MobAssassin enabled");
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args)
+    {
+        if (label.equalsIgnoreCase("ma"))
+        {
+            if (args.length == 0)
+            {
+                sender.sendMessage(ChatColor.GRAY + "MobAssassin version " + getDescription().getVersion() + " by moderator_man");
+                return true;
+            }
+
+            if (args[0].equalsIgnoreCase("stats"))
+            {
+                String statsTarget = sender.getName();
+
+                if (args.length >= 2) statsTarget = args[1]; // target username to load
+
+                if (!(sender instanceof Player) && sender.getName().equals(statsTarget))
+                {
+                    sender.sendMessage(ChatColor.RED + "You must be a player to load your own stats! Please specify a username if loading a player's stats from console.");
+                    return true;
+                }
+
+                //TODO: display stats
+            }
+        }
+
+        return false;
     }
 
     public void onDisable()
