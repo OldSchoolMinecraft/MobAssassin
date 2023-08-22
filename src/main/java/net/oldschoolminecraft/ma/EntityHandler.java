@@ -78,8 +78,12 @@ public class EntityHandler extends EntityListener
 
             user.setMoney(user.getMoney() + value);
 
-            player.sendMessage(ChatColor.GREEN + "You received $" + value + " for killing " + mobType);
-            System.out.println(player.getName() + " has received $" + value + " for killing " + mobType);
+            boolean lostMoney = (value < 0);
+
+            ChatColor color = ChatColor.GREEN;
+            if (lostMoney) color = ChatColor.RED;
+            player.sendMessage(String.format(color + "You %s $%s for killing %s", lostMoney ? "lost" : "received", value, mobType));
+            System.out.println(String.format(color + "%s has %s $%s for killing %s", player.getName(), lostMoney ? "lost" : "received", value, mobType));
         } else {
             // mob is dead, remove it from the hashmap
             MobAssassin.instance.spawnerEntities.remove(event.getEntity().getEntityId());
