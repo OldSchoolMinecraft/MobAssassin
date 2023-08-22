@@ -17,6 +17,7 @@ public class MobAssassin extends JavaPlugin
     public static MobAssassin instance;
 
     public HashMap<Integer, Entity> spawnerEntities = new HashMap<>();
+    public HashMap<Integer, String> slimeSizeMap = new HashMap<>();
     public Essentials essentials;
     public MAConfig maConfig;
 
@@ -26,7 +27,12 @@ public class MobAssassin extends JavaPlugin
         essentials = (Essentials) getServer().getPluginManager().getPlugin("Essentials");
         maConfig = new MAConfig(new File(getDataFolder(), "config.yml"));
 
-        getServer().getPluginManager().registerEvents(new EntityHandler(), this);
+        slimeSizeMap.put(1, "Small");
+        slimeSizeMap.put(2, "Medium");
+        slimeSizeMap.put(4, "Large");
+
+        EntityHandler handler = new EntityHandler();
+        getServer().getPluginManager().registerEvents(handler, this);
 
         Bukkit.getScheduler().scheduleAsyncRepeatingTask(this, () ->
         {

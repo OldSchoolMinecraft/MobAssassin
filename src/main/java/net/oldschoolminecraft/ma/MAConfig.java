@@ -21,15 +21,14 @@ public class MAConfig extends Configuration
 
     private void write()
     {
-        generateConfigOption("incentives.EntityZombie", 0.2D);
-        generateConfigOption("incentives.EntitySkeleton", 0.3D);
-        generateConfigOption("incentives.EntityCreeper", 0.4D);
-        generateConfigOption("incentives.EntitySpider", 0.25D);
-        generateConfigOption("incentives.EntitySlime:0", 1.0D);
-        generateConfigOption("incentives.EntitySlime:1", 0.35D);
-        generateConfigOption("incentives.EntitySlime:2", 0.0D);
-        generateConfigOption("incentives.EntityPigman", 0.4D);
-        generateConfigOption("incentives.EntityGhast", 4.0D);
+        generateConfigOption("incentives.Zombie", 0.2D);
+        generateConfigOption("incentives.Skeleton", 0.3D);
+        generateConfigOption("incentives.Creeper", 0.4D);
+        generateConfigOption("incentives.Spider", 0.25D);
+        generateConfigOption("incentives.LargeSlime", 1.0D);
+        generateConfigOption("incentives.MediumSlime", 0.35D);
+        generateConfigOption("incentives.Pigman", 0.4D);
+        generateConfigOption("incentives.Ghast", 4.0D);
     }
 
     private void generateConfigOption(String key, Object defaultValue)

@@ -1,7 +1,10 @@
 package net.oldschoolminecraft.ma;
 
 import com.earth2me.essentials.User;
+import org.bukkit.ChatColor;
+import org.bukkit.craftbukkit.entity.CraftLivingEntity;
 import org.bukkit.craftbukkit.entity.CraftMonster;
+import org.bukkit.craftbukkit.entity.CraftSlime;
 import org.bukkit.entity.Arrow;
 import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
@@ -26,27 +29,23 @@ public class EntityHandler extends EntityListener
     }
 
     @EventHandler
-    public void onEntityDamageByEntity(EntityDamageByEntityEvent event)
+    public void onEntityDamage(EntityDamageEvent event)
     {
-        if (!(event.getEntity() instanceof CraftMonster)) return; // ignore event if it's not a monster
+        if (!(event instanceof EntityDamageByEntityEvent)) return;
 
-        System.out.println(event.getEntity().getClass().getSimpleName() + " damaged by " + event.getDamager().getClass().getSimpleName());
-        System.out.println("Current health: " + ((CraftMonster) event.getEntity()).getHealth());
-        System.out.println("Damage: " + event.getDamage());
+        EntityDamageByEntityEvent e = (EntityDamageByEntityEvent) event;
 
-        boolean dead = (((CraftMonster) event.getEntity()).getHealth() - event.getDamage()) <= 0;
-        if (!dead) return; // ignore event if monster isn't dead
+        if (!(event.getEntity() instanceof CraftMonster || event.getEntity() instanceof CraftLivingEntity)) return; // ignore event if it's not a monster
+        if (event.getCause() != EntityDamageEvent.DamageCause.ENTITY_ATTACK) return; // if the damage cause reason isn't an entity attack, ignore it
+        if (event.getEntity().isDead()) return;
+        if (((CraftLivingEntity) event.getEntity()).getHealth() > 0) return; // health must be at least 0
 
         if (!MobAssassin.instance.spawnerEntities.containsKey(event.getEntity().getEntityId()))
         {
-            // if the damage cause reason isn't an entity attack, ignore it
-            EntityDamageEvent.DamageCause cause = event.getEntity().getLastDamageCause().getCause();
-            System.out.println("mob death: " + cause);
-            if (!(cause == EntityDamageEvent.DamageCause.CONTACT)) return;
             // if the damage cause entity isn't a player, check if it's an arrow
-            if (!(event.getDamager() instanceof Player))
+            if (!(e.getDamager() instanceof Player))
             {
-                if (event.getDamager() instanceof Arrow)
+                if (e.getDamager() instanceof Arrow)
                 {
                     // get the shooter of the arrow
                     LivingEntity shooter = ((Arrow) event.getEntity().getLastDamageCause().getEntity()).getShooter();
@@ -55,18 +54,31 @@ public class EntityHandler extends EntityListener
                 } else return; // not a player or an arrow
             }
 
-            String mobType = event.getEntity().getClass().getSimpleName();
+            String mobType = event.getEntity().getClass().getSimpleName().split("Craft")[1];
+            String incentive = mobType;
 
-            System.out.println("mob death: " + mobType + " killed by " + event.getDamager().getClass().getSimpleName());
+            if (mobType.startsWith("Slime"))
+            {
+                int slimeSize = ((CraftSlime) event.getEntity()).getSize();
+                String slimeSizeStr = MobAssassin.instance.slimeSizeMap.getOrDefault(slimeSize, "");
+                incentive = slimeSizeStr + mobType;
+                mobType = slimeSizeStr + " " + mobType;
+                System.out.println("Slime died, size: " + slimeSize);
+                System.out.println("Incentive: " + incentive);
+                System.out.println("Mob type: " + mobType);
+            }
 
             // dish out the dough
-            Player player = (Player) event.getEntity().getLastDamageCause().getEntity();
+            Player player = (Player) e.getDamager();
             User user = MobAssassin.instance.essentials.getOfflineUser(player.getName());
 
-            double value = MobAssassin.instance.maConfig.getConfigDouble("incentives." + mobType);
+            boolean hasProperty = MobAssassin.instance.maConfig.getProperty("incentives." + incentive) != null;
+            double value = hasProperty ? MobAssassin.instance.maConfig.getConfigDouble("incentives." + incentive) : 0;
+            if (value == 0) return;
 
-            user.giveMoney(value);
+            user.setMoney(user.getMoney() + value);
 
+            player.sendMessage(ChatColor.GREEN + "You received $" + value + " for killing " + mobType);
             System.out.println(player.getName() + " has received $" + value + " for killing " + mobType);
         } else {
             // mob is dead, remove it from the hashmap
